@@ -4,11 +4,10 @@
 // WiFi credentials
 const char *ssid = "Spider paul";
 const char *password = "7500@@85";
-unsigned long lastTime = 0;
-unsigned long interval = 1000;
 const int trigPin = 18;
 const int echoPin = 19;
-long distance, duration;
+long duration;
+float distance;
 
 WebSocketsClient webSocket;
 
@@ -51,21 +50,17 @@ void setup()
 void loop()
 {
   webSocket.loop();
-  unsigned long currentTime = millis();
-  if (currentTime - lastTime > interval)
-  {
-    lastTime = currentTime;
-    digitalWrite(trigPin, LOW);
-    delayMicroseconds(2);
 
-    digitalWrite(trigPin, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(trigPin, LOW);
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
 
-    duration = pulseIn(echoPin, HIGH);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
 
-    distance = duration * 0.034 / 2;
+  duration = pulseIn(echoPin, HIGH);
 
-    webSocket.sendTXT(String(distance).c_str());
-  }
+  distance = duration * 0.034 / 2;
+
+  webSocket.sendTXT(String(distance).c_str());
 }

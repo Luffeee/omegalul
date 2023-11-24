@@ -3,27 +3,39 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
-import time
 import asyncio
 import websockets
 import threading
 
+# Global variables
+i = 10
+last_i = 10
 
-async def server(websocket, path):
+# WebSocket server functions
+
+
+async def server(websocket):
+    global i, last_i
     async for message in websocket:
-        with open("output.txt", 'w') as f:
-            f.write(message)
+        try:
+            i = float(message)
+            last_i = i
+        except Exception as e:
+            i = last_i
+            print(e)
 
 
 def start_server():
     asyncio.set_event_loop(asyncio.new_event_loop())
-    start_server = websockets.serve(server, "192.168.0.102", 3000)
-    asyncio.get_event_loop().run_until_complete(start_server)
+    server_instance = websockets.serve(server, "192.168.0.102", 3000)
+    asyncio.get_event_loop().run_until_complete(server_instance)
     asyncio.get_event_loop().run_forever()
+
+# OpenGL drawing functions
 
 
 def cm2px(cm):
-    return int(-9 + cm*1)
+    return int(-9 + cm * 1)
 
 
 def draw_cube():
@@ -91,43 +103,24 @@ def is_colliding(cube_pos, wall_bounds):
 
 
 def main():
-    last_px = 0
-    last_i = 0
+    # Initialize server and Pygame
     threading.Thread(target=start_server, daemon=True).start()
-    with open('output.txt', 'r') as f:
-        try:
-            i = int(f.readline().strip())
-            last_i = i
-        except:
-            i = last_i
-    px = cm2px(i)
-    f.close()
     pygame.init()
     display = (800, 600)
     pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
-
     gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)
     glTranslatef(0.0, 0.0, -20)
 
-    cube_position = [px, 0, 0]
+    # Initialize camera and cube settings
+    cube_position = [cm2px(i), 0, 0]
     camera_angle = [0, 0]
     camera_position = [0, 0, -5]
     mouse_dragging = False
     last_mouse_pos = (0, 0)
 
     while True:
-        with open('output.txt', 'r') as f:
-            try:
-                i = int(f.readline().strip())
-                last_i = i
-            except:
-                i = last_i
         px = cm2px(i)
-        f.close()
         cube_position = [px, 0, 0]
-
-        last_px = px
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -163,8 +156,8 @@ def main():
             camera_position[0] += 0.1
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
         glPushMatrix()
+
         glTranslatef(*camera_position)
         glRotatef(camera_angle[0], 1, 0, 0)
         glRotatef(camera_angle[1], 0, 1, 0)
